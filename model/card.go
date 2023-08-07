@@ -64,3 +64,15 @@ type NewCardInfo struct {
 	TrainingTechnique         int   `json:"training_technique"`
 	MemberLovePanels          []any `json:"member_love_panels"`
 }
+
+type GradeUpCardReq struct {
+	CardMasterID int64 `json:"card_master_id"`
+	ContentID    int   `json:"content_id"`
+}
+
+type CardGradeUpTriggerInfo struct {
+	TriggerID            int64 `json:"trigger_id"`
+	CardMasterID         int64 `json:"card_master_id"`
+	BeforeLoveLevelLimit int   `json:"before_love_level_limit"`
+	AfterLoveLevelLimit  int   `json:"after_love_level_limit"`
+}

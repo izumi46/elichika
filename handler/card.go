@@ -4,7 +4,9 @@ import (
 	"elichika/config"
 	"elichika/model"
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
@@ -160,6 +162,96 @@ func GetOtherUserCard(ctx *gin.Context) {
 func FetchTrainingTree(ctx *gin.Context) {
 	signBody := GetData("fetchTrainingTree.json")
 	resp := SignResp(ctx.GetString("ep"), signBody, config.SessionKey)
+
+	ctx.Header("Content-Type", "application/json")
+	ctx.String(http.StatusOK, resp)
+}
+
+func GradeUpCard(ctx *gin.Context) {
+	reqBody := gjson.Parse(ctx.GetString("reqBody")).Array()[0]
+	fmt.Println(reqBody.String())
+
+	var req model.GradeUpCardReq
+	if err := json.Unmarshal([]byte(reqBody.String()), &req); err != nil {
+		panic(err)
+	}
+	fmt.Println(req)
+
+	var cardInfo model.CardInfo
+	gjson.Parse(GetUserData("userCard.json")).Get("user_card_by_card_id").
+		ForEach(func(key, value gjson.Result) bool {
+			if value.IsObject() && value.Get("card_master_id").Int() == req.CardMasterID {
+				keyCard := "user_card_by_card_id." + key.String()
+				grade := gjson.Get(value.String(), "grade").Int()
+				keyCardInfo, _ := sjson.Set(value.String(), "grade", grade+1)
+				if err := json.Unmarshal([]byte(keyCardInfo), &cardInfo); err != nil {
+					panic(err)
+				}
+				//
+				SetUserData("userCard.json", keyCard, cardInfo)
+
+				return false
+			}
+			return true
+		})
+
+	var userCard []any
+	userCard = append(userCard, req.CardMasterID)
+	userCard = append(userCard, cardInfo)
+
+	var memberInfo model.UserMemberInfo
+	memberId := GetMemberMasterIdByCardMasterId(int(req.CardMasterID))
+	gjson.Parse(GetUserData("memberSettings.json")).Get("user_member_by_member_id").
+		ForEach(func(key, value gjson.Result) bool {
+			if value.IsObject() && int(value.Get("member_master_id").Int()) == memberId {
+				keyMemberInfo, _ := sjson.Set(value.String(), "love_point_limit", 13181880)
+				keyMemberInfo, _ = sjson.Set(keyMemberInfo, "love_level", 500)
+				if err := json.Unmarshal([]byte(keyMemberInfo), &memberInfo); err != nil {
+					panic(err)
+				}
+				return false
+			}
+			return true
+		})
+
+	var memberData []any
+	memberData = append(memberData, memberId)
+	memberData = append(memberData, memberInfo)
+
+	triggerId := time.Now().UnixNano()
+	triggerInfo := model.CardGradeUpTriggerInfo{
+		TriggerID:            triggerId,
+		CardMasterID:         req.CardMasterID,
+		BeforeLoveLevelLimit: 497,
+		AfterLoveLevelLimit:  500,
+	}
+	var gradeUpTrigger []any
+	gradeUpTrigger = append(gradeUpTrigger, triggerId)
+	gradeUpTrigger = append(gradeUpTrigger, triggerInfo)
+
+	signBody := GetData("gradeUpCard.json")
+	signBody, _ = sjson.Set(signBody, "user_model_diff.user_member_by_member_id", memberData)
+	signBody, _ = sjson.Set(signBody, "user_model_diff.user_card_by_card_id", userCard)
+	signBody, _ = sjson.Set(signBody, "user_model_diff.user_info_trigger_card_grade_up_by_trigger_id", gradeUpTrigger)
+	resp := SignResp(ctx.GetString("ep"), signBody, config.SessionKey)
+	fmt.Println(resp)
+
+	ctx.Header("Content-Type", "application/json")
+	ctx.String(http.StatusOK, resp)
+}
+
+func ReadCardGradeUp(ctx *gin.Context) {
+	triggerId := gjson.Parse(ctx.GetString("reqBody")).Array()[0].Get("trigger_id").Int()
+	fmt.Println(triggerId)
+
+	var triggerInfo []any
+	triggerInfo = append(triggerInfo, triggerId)
+	triggerInfo = append(triggerInfo, nil)
+
+	signBody := GetData("readCardGradeUp.json")
+	signBody, _ = sjson.Set(signBody, "user_model.user_info_trigger_card_grade_up_by_trigger_id", triggerInfo)
+	resp := SignResp(ctx.GetString("ep"), signBody, config.SessionKey)
+	fmt.Println(resp)
 
 	ctx.Header("Content-Type", "application/json")
 	ctx.String(http.StatusOK, resp)
