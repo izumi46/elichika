@@ -1,7 +1,10 @@
 package main
 
 import (
+	"elichika/config"
 	"elichika/router"
+	"fmt"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -12,5 +15,13 @@ func main() {
 	r := gin.Default()
 	router.Router(r)
 
-	r.Run(":"+config.Conf.Settings.Port) // listen and serve on 0.0.0.0:80 as default, or on a custom port defined in config.json
+	if strings.HasPrefix(config.Conf.Settings.HostName, "unix/") {
+		path := strings.TrimPrefix(config.Conf.Settings.HostName, "unix/")
+		fmt.Println("Running on unix socket: ", path)
+		_ = r.RunUnix(path)
+	} else {
+		addr := config.Conf.Settings.HostName + ":" + config.Conf.Settings.Port
+		fmt.Println("Running on: ", addr)
+		r.Run(addr)
+	}
 }

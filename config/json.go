@@ -15,7 +15,8 @@ type AppConfigs struct {
 
 type Settings struct {
 	CdnServer string `json:"cdn_server"`
-  	Port string `json:"listen_port"`
+	HostName  string `json:"hostname"`
+	Port      string `json:"listen_port"`
 }
 
 type LevelDbConfigs struct {
@@ -27,7 +28,8 @@ func DefaultConfigs() *AppConfigs {
 		AppName: "elichika",
 		Settings: Settings{
 			CdnServer: "http://192.168.1.123/static",
-      			Port: "80",
+			HostName:  "0.0.0.0",
+			Port:      "80",
 		},
 	}
 }

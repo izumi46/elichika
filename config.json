@@ -1,0 +1,8 @@
+{
+    "app_name": "elichika",
+    "settings": {
+        "cdn_server": "http://127.0.0.1/static",
+        "hostname": "localhost",
+        "listen_port": "8010"
+    }
+}
